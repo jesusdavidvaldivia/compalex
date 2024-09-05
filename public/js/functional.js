@@ -7,6 +7,7 @@ Data = {
     showDiff: function (elem) {
         $('table.table tr.data').hide();
         $('table.table li.new').parent().parent().parent().show();
+        $('table.table li.new').parent().parent().parent().next().show();
         Data.selectElement(elem);
     },
 
@@ -24,3 +25,4 @@ Data = {
         $('div.modal-background').removeClass('visible');
     }
 }
+

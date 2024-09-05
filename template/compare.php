@@ -5,6 +5,10 @@
     <title>COMPALEX - database schema compare tool</title>
     <script src="/public/js/jquery.min.js"></script>
     <script src="/public/js/functional.js"></script>
+    <script src="/public/js/prism.js"></script>
+    <script src="/public/js/tabs.js"></script>
+    <link rel="stylesheet" href="/public/css/prism.css">
+    <link rel="stylesheet" href="/public/css/tabs.css">
     <style type="text/css" media="all">
         @import url("/public/css/style.css");
     </style>
@@ -73,10 +77,14 @@
         <tr class="data">
             <?php foreach (array('fArray', 'sArray') as $blockType) { ?>
             <td class="type-<?php echo $_REQUEST['action']; ?>">
-                <h3><?php echo $tableName; ?> <sup style="color: red;"><?php 
+                <h3><?php echo $tableName; ?> <sup style="color: red;"><?php
                 if ($data != null && isset($data[$blockType]) && $data[$blockType] != null) {
                     echo count($data[$blockType]); 
                 }?></sup></h3>
+                <?php
+                    $tableSchema = "ALTER TABLE $tableName";
+                    $tableSchema1 = "CREATE TABLE $tableName (";
+                ?>
                 <div class="table-additional-info">
                     <?php if(isset($additionalTableInfo[$tableName][$blockType])) {
                             foreach ($additionalTableInfo[$tableName][$blockType] as $paramKey => $paramValue) {
@@ -85,6 +93,20 @@
                         }
                     ?>
                 </div>
+                <?php
+                    foreach ($data["fArray"] as $fieldName => $tparam) {
+                        $increment = $fieldName == "id" ? " NOT NULL AUTO_INCREMENT " : "";
+                        $timestamp = $tparam["dtype"] == "timestamp" ? " NOT NULL DEFAULT CURRENT_TIMESTAMP " : "";
+                        $tableSchema .= "\n ADD COLUMN `$fieldName` " . $tparam['dtype']."$increment $timestamp,";
+                        $tableSchema1 .= "\n`$fieldName` " . $tparam['dtype']."$increment $timestamp,";
+                        if($fieldName == "id"){
+                            $tableSchema .= "\n PRIMARY KEY (id),";
+                            $tableSchema1 .= "\n PRIMARY KEY (id),";
+                        }
+                    }
+                    $tableSchema = substr($tableSchema, 0, -1);
+                    $tableSchema1 = substr($tableSchema1, 0, -1);
+                ?>
                 <?php if ($data[$blockType]) { ?>
                     <ul>
                         <?php foreach ($data[$blockType] as $fieldName => $tparam) { ?>
@@ -92,18 +114,42 @@
                                 echo 'style="color: red;" class="new" ';
                             } ?>><b style="white-space: pre"><?php echo $fieldName; ?></b>
                                 <span <?php if (isset($tparam['changeType']) && $tparam['changeType']): ?>style="color: red;" class="new" <?php endif;?>>
-                                    <?php echo $tparam['dtype']; ?>
+                                    <?php echo $tparam['dtype'];?>
                                 </span>
                             </li>
-                        <?php } ?>
+                        <?php
+                        }
+                        ?>
                     </ul>
-                <?php } ?>
+                <?php
+                    }
+                    $tableSchema .= ";";
+                    $tableSchema1 .= "\n)";
+                ?>
                 <?php if ($data != null && isset($data[$blockType]) && $data[$blockType] != null && count($data[$blockType]) && in_array($_REQUEST['action'], array('tables', 'views'))) { ?><a
                     target="_blank"
                     onclick="Data.getTableData('index.php?action=rows&baseName=<?php echo $basesName[$blockType]; ?>&tableName=<?php echo $tableName; ?>'); return false;"
                     href="#" class="sample-data">Sample data (<?php echo SAMPLE_DATA_LENGTH; ?> rows)</a><?php } ?>
             </td>
             <?php } ?>
+        </tr>
+        <tr class="data">
+            <td colspan="2">
+                <div class="tab">
+                    <button class="tablinks" onclick="openCity(event, 'alter_<?=$tableName?>')" >ALTER</button>
+                    <button class="tablinks" onclick="openCity(event, 'create_<?=$tableName?>')">CREATE</button>
+                </div>
+
+                <!-- Tab content -->
+                <div id="alter_<?=$tableName?>" class="tabcontent">
+                    <h3>ALTER</h3>
+                    <pre class="language"><code class="language-sql"><?=$tableSchema;?></code></pre>
+                </div>
+                <div id="create_<?=$tableName?>" class="tabcontent">
+                    <h3>CREATE</h3>
+                    <pre class="language"><code class="language-sql"><?=$tableSchema1;?></code></pre>
+                </div>
+            </td>
         </tr>
     <?php } ?>
     </table>
